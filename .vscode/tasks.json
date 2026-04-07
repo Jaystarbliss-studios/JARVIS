@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Free Claude Proxy",
+            "type": "shell",
+            "command": "C:\\Users\\johnr\\AppData\\Roaming\\Python\\Python311\\Scripts\\uv.exe run uvicorn server:app --host 0.0.0.0 --port 8082",
+            "group": "build",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always",
+                "focus": true
+            }
+        },
+        {
+            "label": "Run Claude CLI",
+            "type": "shell",
+            "command": "claude",
+            "envFile": "${workspaceFolder}/.env",
+            "problemMatcher": [],
+            "group": "build",
+            "presentation": {
+                "panel": "shared",
+                "reveal": "always",
+                "focus": true
+            }
+        }
+    ]
+}

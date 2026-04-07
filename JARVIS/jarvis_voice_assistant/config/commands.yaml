@@ -1,0 +1,61 @@
+# JARVIS Command Whitelist
+# Only commands in this list can be executed after voice verification
+# Format: intent_pattern -> command_template
+
+# CRITICAL: This is the security boundary. Never add dangerous commands here.
+
+commands:
+  # System Information
+  - intent: "what time is it|current time|time"
+    command: "python -c \"import datetime; print(datetime.datetime.now().strftime('%H:%M:%S'))\""
+    description: "Report current time"
+    sandbox: true
+    
+  - intent: "what is today|today's date|current date"
+    command: "python -c \"import datetime; print(datetime.datetime.now().strftime('%A, %B %d, %Y'))\""
+    description: "Report current date"
+    sandbox: true
+    
+  - intent: "system status|check system"
+    command: "systeminfo"  # Windows; use 'uname -a' on Unix
+    description: "Get system information"
+    sandbox: true
+    
+  # Application Control
+  - intent: "open browser|launch browser|start browser"
+    command: "start https://www.google.com"  # Windows; use 'open' on Mac, 'xdg-open' on Linux
+    description: "Open default web browser"
+    sandbox: true
+    
+  - intent: "open notepad|open text editor"
+    command: "notepad"  # Windows; use 'gedit' on Linux, 'TextEdit' on Mac
+    description: "Open notepad"
+    sandbox: true
+    
+  # Utility
+  - intent: "play music|start music|play audio"
+    command: "python -m webbrowser -t https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    description: "Play music (YouTube)"
+    sandbox: true
+    
+  # JARVIS Status
+  - intent: "jarvis status|are you online|check status"
+    command: "echo JARVIS System Online - Voice Authentication Active"
+    description: "Check JARVIS status"
+    sandbox: true
+    
+  - intent: "list commands|what can you do|available commands"
+    command: "echo Available commands: time, date, browser, notepad, music, status"
+    description: "List available commands"
+    sandbox: true
+
+# IMPORTANT: Each command has a timeout of 30 seconds
+# Commands run in sandboxed subprocess with limited permissions
+# No shell=True without explicit review
+
+# EXTENSION GUIDELINES:
+# Before adding new commands:
+# 1. Security review - will this harm the system?
+# 2. Sandboxing - can this be restricted?
+# 3. User value - does the user actually need this?
+# 4. Test thoroughly before production

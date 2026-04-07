@@ -1,0 +1,62 @@
+# JARVIS Voice Assistant - Production Configuration
+# Security-first settings for offline voice authentication
+
+audio:
+  sample_rate: 16000           # Hertz (required for speaker verification models)
+  channels: 1                  # Mono only
+  chunk_size: 1024             # Frames per buffer
+  format: int16                # PCM 16-bit
+  device_index: null           # null = default, specify index if needed
+
+enrollment:
+  num_samples: 20              # Number of samples for voiceprint averaging
+  min_duration: 6.0            # Minimum seconds per sample
+  max_duration: 12.0           # Maximum seconds per sample
+  sample_prompts:
+    - "The quick brown fox jumps over the lazy dog"
+    - "Hello Jarvis, this is my voice for enrollment"
+    - "I am enrolling my biometric voice signature"
+    - "Security and privacy are my top priorities"
+    - "Please recognize my voice for future authentication"
+    - "This is a unique sample for voice recognition"
+    - "Confirm my identity using speaker verification"
+
+verification:
+  similarity_threshold: 0.70   # 0.0 to 1.0 (cosine similarity)
+                               # 0.70 = 70% match required (tunable for security level)
+                               # Higher = stricter, more false rejections
+                               # Lower = lenient, more false acceptances
+  max_attempts: 3              # Failed verification attempts before lockout
+  lockout_duration: 300        # Seconds (5 minutes)
+  min_audio_duration: 1.5      # Minimum speech length to process
+
+models:
+  speaker_verification: "speechbrain/spkrec-ecapa-voxceleb"  # Pre-trained ECAPA-TDNN
+  speech_recognition: "models/speech_recognition/vosk-model-small-en-us-0.15"
+  wake_word_enabled: false     # Optional: disabled by default for simplicity
+
+security:
+  # CRITICAL: Biometric data protection
+  voiceprint_path: "data/voiceprint.encrypted"
+  encryption_key_env: "JARVIS_ENCRYPTION_KEY"  # Must set this environment variable
+  
+  # Audit logging
+  log_path: "logs/access.log"
+  log_failed_attempts: true
+  log_successful_verifications: true
+  
+  # Anti-spoofing
+  enable_antispoof: true
+  
+  # Fail-secure defaults
+  default_deny: true           # Reject by default, only allow explicit passes
+  require_active_speech: true  # Basic liveness check
+
+commands:
+  config_path: "config/commands.yaml"
+  execution_timeout: 30        # Seconds
+  require_confirmation: false  # Ask before executing dangerous commands
+  sandbox_enabled: true
+
+thresholds:
+  path: "config/thresholds.yaml"

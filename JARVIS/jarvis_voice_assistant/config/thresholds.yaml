@@ -1,0 +1,47 @@
+# JARVIS Verification Thresholds
+# Tuning parameters for security vs convenience trade-off
+
+# Speaker Verification Similarity Scoring
+# Cosine similarity ranges from 0.0 (completely different) to 1.0 (identical)
+
+thresholds:
+  # DEFAULT: Balanced security (recommended for most users)
+  default:
+    similarity: 0.70
+    description: "Recommended balance between security and convenience"
+    
+  # HIGH_SECURITY: Stricter requirements
+  high_security:
+    similarity: 0.75
+    description: "Reject more false acceptances, may have more false rejections"
+    use_case: "Sensitive systems, financial transactions"
+    
+  # RELAXED: More permissive (not recommended unless speakers are very different each time)
+  relaxed:
+    similarity: 0.65
+    description: "Accept more variations in voice, higher false acceptance risk"
+    use_case: "Testing, non-critical systems, noisy environments"
+
+# Anti-Spoofing Settings
+antispoof:
+  # Basic liveness detection - reject if audio is too repetitive
+  max_frequency_concentration: 0.85  # If single frequency > this, likely pre-recorded
+  
+  # Energy variation check - pre-recorded audio often has consistent volume
+  min_energy_variation: 0.15
+  
+  # Duration check - unreasonably short/long samples rejected
+  min_duration: 1.5  # seconds
+  max_duration: 15.0  # seconds
+
+# Performance Monitoring
+performance:
+  max_embedding_extraction_time: 2.0  # seconds
+  max_similarity_computation_time: 0.1  # seconds
+  warning_threshold: 1.5  # Log warning if operation takes this long
+
+# Adaptive Threshold (Future Enhancement)
+# adaptive:
+#   enabled: false
+#   learning_rate: 0.001  # How quickly to adjust threshold based on accepted/rejected samples
+#   history_window: 100   # Number of recent verifications to consider
