@@ -3,28 +3,30 @@ Ollama Local Model Interface
 Provides unified access to locally-running LLM models via Ollama
 """
 
-import asyncio
-import httpx
 import json
-from typing import AsyncIterator, Optional, Dict, Any
+import logging
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from enum import Enum
-import logging
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
 
 class ModelSize(Enum):
     """Model size categories"""
-    TINY = "7b"       # ~4GB RAM (Mistral 7B, Phi 2)
-    SMALL = "13b"     # ~8GB RAM (Llama 2 13B)
-    MEDIUM = "70b"    # ~40GB RAM (Llama 2 70B)
-    LARGE = "405b"    # ~200GB+ (Llama 3 405B)
+
+    TINY = "7b"  # ~4GB RAM (Mistral 7B, Phi 2)
+    SMALL = "13b"  # ~8GB RAM (Llama 2 13B)
+    MEDIUM = "70b"  # ~40GB RAM (Llama 2 70B)
+    LARGE = "405b"  # ~200GB+ (Llama 3 405B)
 
 
 @dataclass
 class OllamaModel:
     """Model configuration"""
+
     name: str
     display_name: str
     size: ModelSize
@@ -35,9 +37,9 @@ class OllamaModel:
 
 class OllamaEngine:
     """Interface to Ollama local model server"""
-    
+
     OLLAMA_HOST = "http://localhost:11434"
-    
+
     # Recommended models for different use cases
     RECOMMENDED_MODELS = {
         ModelSize.TINY: OllamaModel(
@@ -46,7 +48,7 @@ class OllamaEngine:
             size=ModelSize.TINY,
             ram_required=8,
             context_window=8192,
-            description="Fast, efficient 7B model. Best for speed."
+            description="Fast, efficient 7B model. Best for speed.",
         ),
         ModelSize.SMALL: OllamaModel(
             name="neural-chat",
@@ -54,7 +56,7 @@ class OllamaEngine:
             size=ModelSize.SMALL,
             ram_required=16,
             context_window=4096,
-            description="Conversation-optimized 13B model."
+            description="Conversation-optimized 13B model.",
         ),
         ModelSize.MEDIUM: OllamaModel(
             name="llama2",
@@ -62,14 +64,14 @@ class OllamaEngine:
             size=ModelSize.MEDIUM,
             ram_required=48,
             context_window=4096,
-            description="Most capable open model. Requires 48GB+ RAM."
+            description="Most capable open model. Requires 48GB+ RAM.",
         ),
     }
-    
-    def __init__(self, model_name: Optional[str] = None):
+
+    def __init__(self, model_name: str | None = None):
         """
         Initialize Ollama engine
-        
+
         Args:
             model_name: Name of model to use (e.g., 'mistral')
                        If None, defaults to 'mistral'
@@ -77,7 +79,7 @@ class OllamaEngine:
         self.model_name = model_name or "mistral"
         self.client = httpx.AsyncClient(timeout=None)
         self._is_ready = False
-    
+
     async def check_connection(self) -> bool:
         """Check if Ollama server is running"""
         try:
@@ -86,7 +88,7 @@ class OllamaEngine:
         except Exception as e:
             logger.error(f"Ollama connection failed: {e}")
             return False
-    
+
     async def list_models(self) -> list:
         """List all available models"""
         try:
@@ -97,14 +99,14 @@ class OllamaEngine:
         except Exception as e:
             logger.error(f"Failed to list models: {e}")
             return []
-    
+
     async def pull_model(self, model_name: str) -> bool:
         """
         Download and cache model from Ollama registry
-        
+
         Args:
             model_name: Model identifier (e.g., 'mistral', 'neural-chat')
-        
+
         Returns:
             True if successful
         """
@@ -120,7 +122,7 @@ class OllamaEngine:
         except Exception as e:
             logger.error(f"Failed to pull model {model_name}: {e}")
             return False
-    
+
     async def stream_response(
         self,
         prompt: str,
@@ -130,13 +132,13 @@ class OllamaEngine:
     ) -> AsyncIterator[str]:
         """
         Stream response from local model
-        
+
         Args:
             prompt: Input prompt
             temperature: Higher = more creative (0.0-2.0)
             top_p: Nucleus sampling parameter
             top_k: Top-k sampling parameter
-        
+
         Yields:
             Response tokens as they're generated
         """
@@ -162,7 +164,7 @@ class OllamaEngine:
         except Exception as e:
             logger.error(f"Stream response error: {e}")
             yield f"Error: {e}"
-    
+
     async def generate_response(
         self,
         prompt: str,
@@ -171,12 +173,12 @@ class OllamaEngine:
     ) -> str:
         """
         Generate complete response from local model
-        
+
         Args:
             prompt: Input prompt
             temperature: Higher = more creative
             max_tokens: Maximum response length
-        
+
         Returns:
             Complete response text
         """
@@ -186,7 +188,7 @@ class OllamaEngine:
             if len(response) > max_tokens:
                 break
         return response
-    
+
     async def generate_with_history(
         self,
         messages: list,
@@ -194,11 +196,11 @@ class OllamaEngine:
     ) -> str:
         """
         Generate response considering conversation history
-        
+
         Args:
             messages: List of {"role": "user/assistant", "content": "..."}
             temperature: Response creativity
-        
+
         Returns:
             Assistant's response
         """
@@ -207,18 +209,18 @@ class OllamaEngine:
         for msg in messages:
             role = "User" if msg["role"] == "user" else "Assistant"
             context += f"{role}: {msg['content']}\n\n"
-        
+
         context += "Assistant:"
-        
+
         return await self.generate_response(context, temperature=temperature)
-    
+
     async def close(self):
         """Cleanup resources"""
         await self.client.aclose()
 
 
 # Singleton instance
-_ollama_instance: Optional[OllamaEngine] = None
+_ollama_instance: OllamaEngine | None = None
 
 
 async def get_ollama_engine(model_name: str = "mistral") -> OllamaEngine:

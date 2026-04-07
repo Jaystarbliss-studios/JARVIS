@@ -3,10 +3,9 @@ Adaptive Model Selection System
 Automatically selects appropriate model based on intent and context
 """
 
+import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Dict
-import logging
 
 from providers.intent_detector import Intent, IntentResult
 
@@ -15,18 +14,20 @@ logger = logging.getLogger(__name__)
 
 class ModelChoice(Enum):
     """Available model tiers"""
+
     TINYLLAMA = "tinyllama"  # 1.1B - Fast, good for teaching
-    PHI_2 = "phi-2"          # 2.7B - Better for code, reasoning
-    MISTRAL = "mistral"      # 7B - Fallback, most capable
+    PHI_2 = "phi-2"  # 2.7B - Better for code, reasoning
+    MISTRAL = "mistral"  # 7B - Fallback, most capable
 
 
 @dataclass
 class ModelSelectionResult:
     """Result of model selection"""
+
     selected_model: ModelChoice
     confidence: float  # 0.0 to 1.0
     reasoning: str
-    fallback_model: Optional[ModelChoice] = None
+    fallback_model: ModelChoice | None = None
 
 
 class ModelSelector:
@@ -41,13 +42,13 @@ class ModelSelector:
     # Intent scoring for each model
     INTENT_SCORES = {
         Intent.TEACHING: {
-            ModelChoice.TINYLLAMA: 0.9,   # Best for teaching
+            ModelChoice.TINYLLAMA: 0.9,  # Best for teaching
             ModelChoice.PHI_2: 0.7,
             ModelChoice.MISTRAL: 0.8,
         },
         Intent.CODE: {
             ModelChoice.TINYLLAMA: 0.5,
-            ModelChoice.PHI_2: 0.95,      # Best for code
+            ModelChoice.PHI_2: 0.95,  # Best for code
             ModelChoice.MISTRAL: 1.0,
         },
         Intent.REASONING: {
@@ -61,12 +62,12 @@ class ModelSelector:
             ModelChoice.MISTRAL: 0.7,
         },
         Intent.CLARIFICATION: {
-            ModelChoice.TINYLLAMA: 0.8,   # Quick response
+            ModelChoice.TINYLLAMA: 0.8,  # Quick response
             ModelChoice.PHI_2: 0.75,
             ModelChoice.MISTRAL: 0.7,
         },
         Intent.OTHER: {
-            ModelChoice.TINYLLAMA: 0.7,   # Default, balanced
+            ModelChoice.TINYLLAMA: 0.7,  # Default, balanced
             ModelChoice.PHI_2: 0.8,
             ModelChoice.MISTRAL: 0.9,
         },
@@ -74,18 +75,18 @@ class ModelSelector:
 
     # Complexity indicators
     COMPLEXITY_INDICATORS = {
-        'high': [
-            r'\b(complex|advanced|deep|sophisticated|intricate)\b',
-            r'\b(architecture|design pattern|algorithm|optimization)\b',
-            r'\b(multi-step|recursive|concurrent|distributed)\b',
+        "high": [
+            r"\b(complex|advanced|deep|sophisticated|intricate)\b",
+            r"\b(architecture|design pattern|algorithm|optimization)\b",
+            r"\b(multi-step|recursive|concurrent|distributed)\b",
         ],
-        'medium': [
-            r'\b(implement|fix|refactor|improve)\b',
-            r'\b(function|method|class|module)\b',
+        "medium": [
+            r"\b(implement|fix|refactor|improve)\b",
+            r"\b(function|method|class|module)\b",
         ],
-        'low': [
-            r'\b(simple|basic|quick|easy|straightforward)\b',
-            r'\b(what|explain|describe)\b',
+        "low": [
+            r"\b(simple|basic|quick|easy|straightforward)\b",
+            r"\b(what|explain|describe)\b",
         ],
     }
 
@@ -98,7 +99,9 @@ class ModelSelector:
         }
         logger.debug("ModelSelector initialized")
 
-    def select(self, intent_result: IntentResult, input_length: int = 0) -> ModelSelectionResult:
+    def select(
+        self, intent_result: IntentResult, input_length: int = 0
+    ) -> ModelSelectionResult:
         """
         Select best model for user input.
 
@@ -121,7 +124,8 @@ class ModelSelector:
 
         # Step 3: Filter by availability
         available_scores = {
-            model: score for model, score in scores.items()
+            model: score
+            for model, score in scores.items()
             if self.model_availability.get(model, False)
         }
 
@@ -149,7 +153,9 @@ class ModelSelector:
             f"Model score: {confidence:.0%}"
         )
 
-        logger.debug("Model selection: %s (score: %.2f)", selected_model.value, confidence)
+        logger.debug(
+            "Model selection: %s (score: %.2f)", selected_model.value, confidence
+        )
 
         return ModelSelectionResult(
             selected_model=selected_model,
@@ -158,30 +164,33 @@ class ModelSelector:
             fallback_model=fallback,
         )
 
-    def _score_by_intent(self, intent: Intent) -> Dict[ModelChoice, float]:
+    def _score_by_intent(self, intent: Intent) -> dict[ModelChoice, float]:
         """Get model scores based on intent"""
-        return self.INTENT_SCORES.get(intent, {
-            ModelChoice.TINYLLAMA: 0.7,
-            ModelChoice.PHI_2: 0.8,
-            ModelChoice.MISTRAL: 0.9,
-        })
+        return self.INTENT_SCORES.get(
+            intent,
+            {
+                ModelChoice.TINYLLAMA: 0.7,
+                ModelChoice.PHI_2: 0.8,
+                ModelChoice.MISTRAL: 0.9,
+            },
+        )
 
     def _estimate_complexity(self, reasoning: str) -> float:
         """
         Estimate input complexity from reasoning text.
-        
+
         Returns:
             Score from 0.0 (simple) to 1.0 (complex)
         """
         text = reasoning.lower()
 
         # Check high complexity indicators
-        for indicator in self.COMPLEXITY_INDICATORS.get('high', []):
+        for indicator in self.COMPLEXITY_INDICATORS.get("high", []):
             if any(word in indicator for word in text.split()):
                 return 0.8
 
         # Check medium complexity
-        for indicator in self.COMPLEXITY_INDICATORS.get('medium', []):
+        for indicator in self.COMPLEXITY_INDICATORS.get("medium", []):
             if any(word in indicator for word in text.split()):
                 return 0.5
 
@@ -189,10 +198,8 @@ class ModelSelector:
         return 0.3
 
     def _adjust_by_complexity(
-        self,
-        scores: Dict[ModelChoice, float],
-        complexity: float
-    ) -> Dict[ModelChoice, float]:
+        self, scores: dict[ModelChoice, float], complexity: float
+    ) -> dict[ModelChoice, float]:
         """
         Adjust model scores based on complexity.
         Higher complexity → prefer more capable models

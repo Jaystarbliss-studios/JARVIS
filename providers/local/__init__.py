@@ -3,15 +3,15 @@ Local Providers Module
 Enables interaction with locally-running LLM models (Ollama)
 """
 
-from .ollama_engine import OllamaEngine, get_ollama_engine, ModelSize
-from .memory_storage import MemoryManager, MemoryType, SQLiteMemory, JSONMemory
+from .memory_storage import JSONMemory, MemoryManager, MemoryType, SQLiteMemory
+from .ollama_engine import ModelSize, OllamaEngine, get_ollama_engine
 
 __all__ = [
-    "OllamaEngine",
-    "get_ollama_engine",
-    "ModelSize",
+    "JSONMemory",
     "MemoryManager",
     "MemoryType",
+    "ModelSize",
+    "OllamaEngine",
     "SQLiteMemory",
-    "JSONMemory",
+    "get_ollama_engine",
 ]

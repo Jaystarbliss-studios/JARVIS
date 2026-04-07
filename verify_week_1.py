@@ -4,14 +4,12 @@ Verifies that all components are working together
 Run with: python verify_week_1.py
 """
 
-import asyncio
-import sys
 import logging
+import sys
 
 # Setup logging
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -22,16 +20,20 @@ print("=" * 60)
 # Step 1: Verify imports
 print("\n[1/5] Verifying imports...")
 try:
-    from providers.intent_detector import IntentDetector, Intent
+    from providers.intent_detector import Intent, IntentDetector
+
     print("  ✓ IntentDetector imported")
-    
-    from providers.model_selector import ModelSelector, ModelChoice
+
+    from providers.model_selector import ModelChoice, ModelSelector
+
     print("  ✓ ModelSelector imported")
-    
+
     from providers.brain import Brain
+
     print("  ✓ Brain imported")
-    
+
     from providers.local.ollama_engine import OllamaEngine
+
     print("  ✓ OllamaEngine imported")
 except ImportError as e:
     print(f"  ✗ Import failed: {e}")
@@ -41,15 +43,17 @@ except ImportError as e:
 print("\n[2/5] Creating instances...")
 try:
     detector = IntentDetector()
-    print(f"  ✓ IntentDetector created ({len(detector.compiled_patterns)} intent types)")
-    
+    print(
+        f"  ✓ IntentDetector created ({len(detector.compiled_patterns)} intent types)"
+    )
+
     selector = ModelSelector()
     print(f"  ✓ ModelSelector created ({len(selector.INTENT_SCORES)} intents covered)")
-    
+
     # Create a mock OllamaEngine for testing (won't connect to actual Ollama)
     ollama = OllamaEngine(model_name="mistral")
     print("  ✓ OllamaEngine created (mistral model)")
-    
+
     brain = Brain(ollama, detector, selector)
     print("  ✓ Brain created with all components")
 except Exception as e:
@@ -68,7 +72,9 @@ test_cases = {
 for input_text, expected_intent in test_cases.items():
     result = detector.detect(input_text)
     status = "✓" if result.primary_intent == expected_intent else "!"
-    print(f"  {status} '{input_text}' → {result.primary_intent.value} ({result.confidence:.0%})")
+    print(
+        f"  {status} '{input_text}' → {result.primary_intent.value} ({result.confidence:.0%})"
+    )
 
 # Step 4: Test model selection
 print("\n[4/5] Testing model selection...")
@@ -83,12 +89,12 @@ test_intents = [
 
 for intent, description in test_intents:
     intent_result = IntentResult(
-        primary_intent=intent,
-        confidence=0.9,
-        reasoning=description
+        primary_intent=intent, confidence=0.9, reasoning=description
     )
     model_result = selector.select(intent_result)
-    print(f"  ✓ {intent.value:12} → {model_result.selected_model.value} ({model_result.confidence:.0%})")
+    print(
+        f"  ✓ {intent.value:12} → {model_result.selected_model.value} ({model_result.confidence:.0%})"
+    )
 
 # Step 5: Brain reasoning tracking
 print("\n[5/5] Testing Brain reasoning storage...")
@@ -96,21 +102,21 @@ try:
     # Simulate a thinking operation without calling Ollama
     detector_test = IntentDetector()
     intent = detector_test.detect("write a function")
-    
+
     selector_test = ModelSelector()
     model = selector_test.select(intent)
-    
+
     # Store reasoning similar to what Brain does
     reasoning = {
-        'intent': intent.primary_intent.value,
-        'intent_confidence': intent.confidence,
-        'model': model.selected_model.value,
-        'model_confidence': model.confidence,
+        "intent": intent.primary_intent.value,
+        "intent_confidence": intent.confidence,
+        "model": model.selected_model.value,
+        "model_confidence": model.confidence,
     }
-    
+
     print(f"  ✓ Stored reasoning: {reasoning}")
-    print(f"  ✓ Intent tracking works")
-    print(f"  ✓ Model selection tracking works")
+    print("  ✓ Intent tracking works")
+    print("  ✓ Model selection tracking works")
 except Exception as e:
     print(f"  ✗ Reasoning tracking failed: {e}")
     sys.exit(1)

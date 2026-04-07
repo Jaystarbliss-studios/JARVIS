@@ -4,32 +4,33 @@ Combines regex patterns, keyword scoring, and clarification logic
 to accurately identify user intent.
 """
 
+import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Tuple
-import logging
 
 logger = logging.getLogger(__name__)
 
 
 class Intent(Enum):
     """Primary intent categories"""
-    TEACHING = "teaching"           # Explanations, learning, how-tos
-    CODE = "code"                   # Code generation, debugging, refactoring
-    REASONING = "reasoning"         # Math, logic, analysis, problem-solving
-    MEMORY = "memory"               # Store/retrieve memory commands
-    CLARIFICATION = "clarification" # User needs to clarify
-    OTHER = "other"                 # Unclassified
+
+    TEACHING = "teaching"  # Explanations, learning, how-tos
+    CODE = "code"  # Code generation, debugging, refactoring
+    REASONING = "reasoning"  # Math, logic, analysis, problem-solving
+    MEMORY = "memory"  # Store/retrieve memory commands
+    CLARIFICATION = "clarification"  # User needs to clarify
+    OTHER = "other"  # Unclassified
 
 
 @dataclass
 class IntentResult:
     """Result of intent detection"""
+
     primary_intent: Intent
     confidence: float  # 0.0 to 1.0
-    keywords: List[str] = field(default_factory=list)
-    patterns_matched: List[str] = field(default_factory=list)
+    keywords: list[str] = field(default_factory=list)
+    patterns_matched: list[str] = field(default_factory=list)
     reasoning: str = ""
 
 
@@ -39,27 +40,27 @@ class IntentDetector:
     # Regex patterns for each intent
     PATTERNS = {
         Intent.CODE: [
-            r'\b(def|class|function|import|export|const|let|var|function)\b',
-            r'\b(debug|fix|error|bug|exception|stack trace|traceback)\b',
-            r'\b(code|script|program|refactor|optimize|algorithm)\b',
-            r'```(\w+)',  # Code block language marker
-            r'(\.py|\.js|\.ts|\.java|\.cpp|\.go|\.rs)\b',  # File extensions
+            r"\b(def|class|function|import|export|const|let|var|function)\b",
+            r"\b(debug|fix|error|bug|exception|stack trace|traceback)\b",
+            r"\b(code|script|program|refactor|optimize|algorithm)\b",
+            r"```(\w+)",  # Code block language marker
+            r"(\.py|\.js|\.ts|\.java|\.cpp|\.go|\.rs)\b",  # File extensions
         ],
         Intent.TEACHING: [
-            r'\b(explain|how to|what is|teach|tutorial|guide|step by step)\b',
-            r'\b(understand|learn|learning|educational|concept|idea)\b',
-            r'\b(why|describe|tell me about|what does|meaning)\b',
-            r'^(how|what|explain|describe|teach)\b',  # Start of sentence
+            r"\b(explain|how to|what is|teach|tutorial|guide|step by step)\b",
+            r"\b(understand|learn|learning|educational|concept|idea)\b",
+            r"\b(why|describe|tell me about|what does|meaning)\b",
+            r"^(how|what|explain|describe|teach)\b",  # Start of sentence
         ],
         Intent.REASONING: [
-            r'\b(calculate|math|solve|equation|formula|prove|logical)\b',
-            r'\b(analyze|analysis|reasoning|think through|work through)\b',
-            r'\b(problem|puzzle|riddle|challenge)\b',
-            r'(\d+\s*[+\-*/=]|√|∑|∫|∞)',  # Math symbols
+            r"\b(calculate|math|solve|equation|formula|prove|logical)\b",
+            r"\b(analyze|analysis|reasoning|think through|work through)\b",
+            r"\b(problem|puzzle|riddle|challenge)\b",
+            r"(\d+\s*[+\-*/=]|√|∑|∫|∞)",  # Math symbols
         ],
         Intent.MEMORY: [
-            r'\b(remember|memorize|store|save|recall|memory|forgot)\b',
-            r'^(jarvis\s+)?(remember|store|save|recall)',  # Memory commands
+            r"\b(remember|memorize|store|save|recall|memory|forgot)\b",
+            r"^(jarvis\s+)?(remember|store|save|recall)",  # Memory commands
             r"'remember|'store|'save",  # Command markers
         ],
     }
@@ -67,24 +68,49 @@ class IntentDetector:
     # Keywords for keyword scoring
     KEYWORDS = {
         Intent.CODE: {
-            'high': ['def', 'class', 'import', 'debug', 'error', 'bug', 'code', 'function', 'fix'],
-            'medium': ['implement', 'write', 'create', 'generate', 'refactor', 'optimize'],
-            'low': ['do', 'make', 'build'],
+            "high": [
+                "def",
+                "class",
+                "import",
+                "debug",
+                "error",
+                "bug",
+                "code",
+                "function",
+                "fix",
+            ],
+            "medium": [
+                "implement",
+                "write",
+                "create",
+                "generate",
+                "refactor",
+                "optimize",
+            ],
+            "low": ["do", "make", "build"],
         },
         Intent.TEACHING: {
-            'high': ['explain', 'teach', 'tutorial', 'guide', 'how to', 'learn', 'understand'],
-            'medium': ['what', 'why', 'describe', 'example', 'show', 'demonstrate'],
-            'low': ['tell', 'say', 'hear'],
+            "high": [
+                "explain",
+                "teach",
+                "tutorial",
+                "guide",
+                "how to",
+                "learn",
+                "understand",
+            ],
+            "medium": ["what", "why", "describe", "example", "show", "demonstrate"],
+            "low": ["tell", "say", "hear"],
         },
         Intent.REASONING: {
-            'high': ['solve', 'calculate', 'math', 'logic', 'analyze', 'prove'],
-            'medium': ['think', 'reason', 'problem', 'work through', 'step by step'],
-            'low': ['try', 'check', 'test'],
+            "high": ["solve", "calculate", "math", "logic", "analyze", "prove"],
+            "medium": ["think", "reason", "problem", "work through", "step by step"],
+            "low": ["try", "check", "test"],
         },
         Intent.MEMORY: {
-            'high': ['remember', 'memorize', 'store', 'recall', 'save', 'memory'],
-            'medium': ['forget', 'remind', 'note'],
-            'low': [],
+            "high": ["remember", "memorize", "store", "recall", "save", "memory"],
+            "medium": ["forget", "remind", "note"],
+            "low": [],
         },
     }
 
@@ -110,26 +136,28 @@ class IntentDetector:
             return IntentResult(
                 primary_intent=Intent.MEMORY,
                 confidence=memory_score,
-                reasoning="Memory command detected via regex patterns"
+                reasoning="Memory command detected via regex patterns",
             )
 
         # Step 2: Score all intents using hybrid approach
-        scores: Dict[Intent, Tuple[float, str]] = {}
+        scores: dict[Intent, tuple[float, str]] = {}
         for intent in Intent:
             if intent == Intent.MEMORY:
                 continue  # Already checked
-            
+
             pattern_score = self._score_patterns(user_input, intent)
             keyword_score = self._score_keywords(user_input, intent)
-            
+
             # Weighted average (patterns more reliable than keywords)
             combined_score = (pattern_score * 0.6) + (keyword_score * 0.4)
-            scores[intent] = (combined_score, f"Patterns: {pattern_score:.2f}, Keywords: {keyword_score:.2f}")
+            scores[intent] = (
+                combined_score,
+                f"Patterns: {pattern_score:.2f}, Keywords: {keyword_score:.2f}",
+            )
 
         # Step 3: Find best match
         best_intent, (best_score, reasoning) = max(
-            scores.items(), 
-            key=lambda x: x[1][0]
+            scores.items(), key=lambda x: x[1][0]
         )
 
         # Step 4: Check confidence threshold
@@ -138,7 +166,7 @@ class IntentDetector:
             return IntentResult(
                 primary_intent=Intent.CLARIFICATION,
                 confidence=0.5,
-                reasoning=f"Low confidence ({best_score:.2f}) - all intents below threshold"
+                reasoning=f"Low confidence ({best_score:.2f}) - all intents below threshold",
             )
 
         # Step 5: Check for competing intents
@@ -150,13 +178,13 @@ class IntentDetector:
         return IntentResult(
             primary_intent=best_intent,
             confidence=min(best_score, 1.0),
-            reasoning=reasoning
+            reasoning=reasoning,
         )
 
     def _score_patterns(self, user_input: str, intent: Intent) -> float:
         """
         Score based on regex pattern matches.
-        
+
         Returns:
             Score from 0.0 to 1.0
         """
@@ -179,7 +207,7 @@ class IntentDetector:
     def _score_keywords(self, user_input: str, intent: Intent) -> float:
         """
         Score based on keyword frequency and weight.
-        
+
         Returns:
             Score from 0.0 to 1.0
         """
@@ -191,38 +219,38 @@ class IntentDetector:
         total_score = 0.0
 
         # High priority keywords
-        for word in keywords.get('high', []):
-            matches = len(re.findall(rf'\b{re.escape(word)}\b', text, re.IGNORECASE))
+        for word in keywords.get("high", []):
+            matches = len(re.findall(rf"\b{re.escape(word)}\b", text, re.IGNORECASE))
             total_score += matches * 0.5
 
         # Medium priority keywords
-        for word in keywords.get('medium', []):
-            matches = len(re.findall(rf'\b{re.escape(word)}\b', text, re.IGNORECASE))
+        for word in keywords.get("medium", []):
+            matches = len(re.findall(rf"\b{re.escape(word)}\b", text, re.IGNORECASE))
             total_score += matches * 0.3
 
         # Low priority keywords
-        for word in keywords.get('low', []):
-            matches = len(re.findall(rf'\b{re.escape(word)}\b', text, re.IGNORECASE))
+        for word in keywords.get("low", []):
+            matches = len(re.findall(rf"\b{re.escape(word)}\b", text, re.IGNORECASE))
             total_score += matches * 0.1
 
         # Normalize: cap at 1.0
         return min(total_score / 2.0, 1.0)
 
-    def get_keywords(self, user_input: str) -> List[str]:
+    def get_keywords(self, user_input: str) -> list[str]:
         """Extract relevant keywords from input"""
         words = user_input.lower().split()
         keywords = []
-        
+
         # Check against all keyword lists
         all_keywords = set()
         for intent_keywords in self.KEYWORDS.values():
             for priority_list in intent_keywords.values():
                 all_keywords.update(priority_list)
-        
+
         for word in words:
             if any(kw in word.lower() for kw in all_keywords):
                 keywords.append(word)
-        
+
         return keywords[:5]  # Return top 5
 
     def explain_detection(self, intent_result: IntentResult) -> str:
